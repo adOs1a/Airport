@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>АРМ Диспетчера аэропорта</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Окно авторизации -->
+  <div id="auth-box" class="auth-card">
+    <h2 style="margin-bottom: 20px; color: #ffcc00; text-align: center;">Вход в систему FIDS</h2>
+    <div class="form-group">
+      <label>Логин диспетчера:</label>
+      <input type="text" id="login-input" placeholder="dispatcher1 или admin">
+    </div>
+    <div class="form-group">
+      <label>Пароль:</label>
+      <input type="password" id="pass-input" placeholder="Пароль">
+    </div>
+    <button class="btn btn-primary" style="width: 100%;" id="btn-login">Войти</button>
+  </div>
+
+  <!-- Рабочая зона диспетчера -->
+  <div id="dashboard" class="admin-container" style="display: none;">
+    <header class="admin-header">
+      <div>
+        <h2 style="font-size: 20px;">Панель управления расписанием</h2>
+        <span style="color: #aaa; font-size: 14px;">Оператор: </span>
+        <strong id="user-display" style="color: #ffcc00;"></strong>
+      </div>
+      <button class="btn btn-secondary" id="btn-logout">Выйти</button>
+    </header>
+
+    <div style="display: grid; grid-template-columns: 360px 1fr; gap: 20px;">
+      <!-- Левая колонка: Форма рейса + Управление бегущей строкой -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <!-- Карточка добавления рейса -->
+        <div style="background: #1a1a1a; padding: 20px; border-radius: 6px; border: 1px solid #333;">
+          <h3 style="margin-bottom: 15px;" id="form-title">Добавить рейс</h3>
+          <input type="hidden" id="f-id">
+          <div class="form-group">
+            <label>Тип табло:</label>
+            <select id="f-type">
+              <option value="departure">Вылет</option>
+              <option value="arrival">Прилет</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Время (ЧЧ:ММ):</label>
+            <input type="time" id="f-time" required>
+          </div>
+          <div class="form-group">
+            <label>Номер рейса:</label>
+            <input type="text" id="f-flight" placeholder="SU 105" required>
+          </div>
+          <div class="form-group">
+            <label>Город:</label>
+            <input type="text" id="f-city" placeholder="Москва" required>
+          </div>
+          <div class="form-group">
+            <label>Авиакомпания:</label>
+            <input type="text" id="f-airline" placeholder="Аэрофлот" required>
+          </div>
+          <div class="form-group">
+            <label>Стойка / Зона выдачи:</label>
+            <input type="text" id="f-gate" placeholder="A05" required>
+          </div>
+          <div class="form-group">
+            <label>Статус рейса:</label>
+            <select id="f-status">
+              <option value="По расписанию|status-on-time">По расписанию</option>
+              <option value="Регистрация|status-on-time">Регистрация</option>
+              <option value="Посадка|status-boarding">Посадка</option>
+              <option value="Задержан|status-delayed">Задержан</option>
+              <option value="Вылетел|status-departed">Вылетел / Прибыл</option>
+            </select>
+          </div>
+          <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="f-auto" checked style="width: auto;">
+            <label for="f-auto" style="margin-bottom: 0; cursor: pointer;">Автоматический расчет статуса</label>
+          </div>
+          <button class="btn btn-primary" style="width: 100%;" id="btn-save">Сохранить рейс</button>
+        </div>
+
+        <!-- Карточка управления бегущей строкой -->
+        <div style="background: #1a1a1a; padding: 20px; border-radius: 6px; border: 1px solid #333;">
+          <h3 style="margin-bottom: 12px; color: #ffcc00;">📢 Бегущая строка экранов</h3>
+          <div class="form-group">
+            <label>Текст сообщения для пассажиров:</label>
+            <textarea id="ticker-input" rows="3" style="width: 100%; background: #262626; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px; resize: vertical;"></textarea>
+          </div>
+          <button class="btn btn-secondary" style="width: 100%;" id="btn-update-ticker">Транслировать на экраны</button>
+        </div>
+      </div>
+
+      <!-- Правая колонка: Таблица рейсов -->
+      <div style="background: #1a1a1a; padding: 20px; border-radius: 6px; border: 1px solid #333;">
+        <h3 style="margin-bottom: 15px;">Текущие рейсы в базе</h3>
+        <table class="fids-table" style="font-size: 14px;">
+          <thead>
+            <tr>
+              <th>Тип</th>
+              <th>Время</th>
+              <th>Рейс</th>
+              <th>Город</th>
+              <th>Режим</th>
+              <th>Статус</th>
+              <th>Действие</th>
+            </tr>
+          </thead>
+          <tbody id="admin-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="store.js"></script>
+  <script>
+    const authBox = document.getElementById('auth-box');
+    const dashboard = document.getElementById('dashboard');
+    const userDisplay = document.getElementById('user-display');
+
+    function checkAuth() {
+      const u = getCurrentUser();
+      if (u) {
+        authBox.style.display = 'none';
+        dashboard.style.display = 'block';
+        userDisplay.textContent = u.name;
+        document.getElementById('ticker-input').value = getTickerText();
+        renderAdminTable();
+      } else {
+        authBox.style.display = 'block';
+        dashboard.style.display = 'none';
+      }
+    }
+
+    document.getElementById('btn-login').addEventListener('click', () => {
+      const l = document.getElementById('login-input').value.trim();
+      const p = document.getElementById('pass-input').value.trim();
+      if (loginDispatcher(l, p)) {
+        checkAuth();
+      } else {
+        alert('Неверный логин или пароль!');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      logoutDispatcher();
+      checkAuth();
+    });
+
+    // Сохранение бегущей строки
+    document.getElementById('btn-update-ticker').addEventListener('click', () => {
+      const text = document.getElementById('ticker-input').value.trim();
+      if (!text) return;
+      saveTickerText(text);
+      alert('Текст отправлен на все мониторы!');
+    });
+
+    function renderAdminTable() {
+      const tbody = document.getElementById('admin-table-body');
+      tbody.innerHTML = '';
+      const list = getFlights();
+
+      list.forEach(f => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${f.type === 'departure' ? '🛫 Вылет' : '🛬 Прилет'}</td>
+          <td>${f.time}</td>
+          <td><strong>${f.flight}</strong></td>
+          <td>${f.city}</td>
+          <td><span style="font-size: 11px; padding: 2px 6px; border-radius: 3px; background: ${f.auto !== false ? '#1b5e20' : '#424242'}">${f.auto !== false ? 'АВТО' : 'РУЧНОЙ'}</span></td>
+          <td class="${f.statusClass}">${f.status}</td>
+          <td>
+            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="editFlight('${f.id}')">Редакт.</button>
+            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteFlight('${f.id}')">Удалить</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Сохранение рейса
+    document.getElementById('btn-save').addEventListener('click', () => {
+      const flightNum = document.getElementById('f-flight').value.trim();
+      const time = document.getElementById('f-time').value;
+      const city = document.getElementById('f-city').value.trim();
+      const airline = document.getElementById('f-airline').value.trim();
+      const gate = document.getElementById('f-gate').value.trim();
+      const [status, statusClass] = document.getElementById('f-status').value.split('|');
+      const type = document.getElementById('f-type').value;
+      const auto = document.getElementById('f-auto').checked;
+      const existingId = document.getElementById('f-id').value;
+
+      if (!flightNum || !time || !city) {
+        alert('Заполните обязательные поля: Время, Номер рейса, Город');
+        return;
+      }
+
+      let flights = getFlights();
+
+      if (existingId) {
+        flights = flights.map(f => f.id === existingId ? { id: existingId, type, time, flight: flightNum, city, airline, gate, status, statusClass, auto } : f);
+        document.getElementById('f-id').value = '';
+        document.getElementById('form-title').textContent = 'Добавить рейс';
+      } else {
+        flights.push({
+          id: Date.now().toString(),
+          type, time, flight: flightNum, city, airline, gate, status, statusClass, auto
+        });
+      }
+
+      saveFlights(flights);
+      renderAdminTable();
+      document.getElementById('f-flight').value = '';
+      document.getElementById('f-city').value = '';
+      document.getElementById('f-gate').value = '';
+    });
+
+    window.deleteFlight = function(id) {
+      if (!confirm('Удалить данный рейс из расписания?')) return;
+      let flights = getFlights().filter(f => f.id !== id);
+      saveFlights(flights);
+      renderAdminTable();
+    };
+
+    window.editFlight = function(id) {
+      const f = getFlights().find(item => item.id === id);
+      if (!f) return;
+      document.getElementById('f-id').value = f.id;
+      document.getElementById('f-type').value = f.type;
+      document.getElementById('f-time').value = f.time;
+      document.getElementById('f-flight').value = f.flight;
+      document.getElementById('f-city').value = f.city;
+      document.getElementById('f-airline').value = f.airline;
+      document.getElementById('f-gate').value = f.gate;
+      document.getElementById('f-auto').checked = f.auto !== false;
+      document.getElementById('form-title').textContent = 'Редактировать рейс ' + f.flight;
+    };
+
+    checkAuth();
+  </script>
+</body>
+</html>

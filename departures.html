@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Табло вылета | Терминал 1</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="board-fullscreen">
+    <div class="board-top">
+      <div class="board-title">🛫 ВЫЛЕТ / DEPARTURES</div>
+      <div class="board-clock" id="clock">00:00:00</div>
+    </div>
+    <table class="fids-table">
+      <thead>
+        <tr>
+          <th>Время</th>
+          <th>Рейс</th>
+          <th>Направление</th>
+          <th>Авиакомпания</th>
+          <th>Сектор/Стойка</th>
+          <th>Статус</th>
+        </tr>
+      </thead>
+      <tbody id="flights-list"></tbody>
+    </table>
+  </div>
+
+  <!-- Бегущая информационная строка -->
+  <div class="ticker-wrap">
+    <div class="ticker-title">ИНФОРМАЦИЯ</div>
+    <div class="ticker-content" id="ticker-text">Загрузка...</div>
+  </div>
+
+  <script src="store.js"></script>
+  <script>
+    startClock('clock');
+
+    function updateTicker() {
+      document.getElementById('ticker-text').textContent = getTickerText();
+    }
+
+    function renderDepartures() {
+      const tbody = document.getElementById('flights-list');
+      tbody.innerHTML = '';
+      const departures = getFlights().filter(f => f.type === 'departure');
+
+      departures.forEach(f => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${f.time}</td>
+          <td><strong>${f.flight}</strong></td>
+          <td>${f.city}</td>
+          <td>
+            <div class="airline-cell">
+              ${getAirlineBadge(f.airline)}
+              <span>${f.airline}</span>
+            </div>
+          </td>
+          <td>${f.gate}</td>
+          <td class="${f.statusClass}">${f.status}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    renderDepartures();
+    updateTicker();
+
+    // Запуск автоматического движка смены статусов
+    runStatusEngine(renderDepartures);
+
+    // Реакция на изменения из панели диспетчера
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'fids_flights_data') renderDepartures();
+      if (e.key === 'fids_ticker_text') updateTicker();
+    });
+  </script>
+</body>
+</html>
