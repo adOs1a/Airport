@@ -2,79 +2,110 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Табло прилета | Терминал 1</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Табло прилёта / Arrivals</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* Гарантированные стили бегущей строки без зависимости от кэша */
+    .ticker-wrap {
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 46px !important;
+      background-color: #ffcc00 !important;
+      display: flex !important;
+      align-items: center !important;
+      z-index: 99999 !important;
+      box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.6) !important;
+      box-sizing: border-box !important;
+      overflow: hidden !important;
+    }
+
+    .ticker-title {
+      background-color: #0b0e14 !important;
+      color: #ffcc00 !important;
+      font-weight: 800 !important;
+      text-transform: uppercase !important;
+      font-size: 0.95rem !important;
+      letter-spacing: 1.5px !important;
+      padding: 0 24px !important;
+      height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      white-space: nowrap !important;
+      flex-shrink: 0 !important;
+      z-index: 100000 !important;
+      box-shadow: 6px 0 12px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    .ticker-track {
+      flex: 1 !important;
+      overflow: hidden !important;
+      position: relative !important;
+      height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+    }
+
+    .ticker-content {
+      display: inline-block !important;
+      white-space: nowrap !important;
+      padding-left: 100% !important;
+      font-weight: 700 !important;
+      font-size: 1.1rem !important;
+      color: #000000 !important;
+      animation: ticker-anim 28s linear infinite !important;
+    }
+
+    @keyframes ticker-anim {
+      0% {
+        transform: translate3d(0, 0, 0);
+      }
+      100% {
+        transform: translate3d(-100%, 0, 0);
+      }
+    }
+  </style>
 </head>
 <body>
-  <div class="board-fullscreen">
-    <div class="board-top">
-      <div class="board-title">🛬 ПРИЛЕТ / ARRIVALS</div>
-      <div class="board-clock" id="clock">00:00:00</div>
-    </div>
-    <table class="fids-table">
+
+  <header class="header">
+    <h1>🛬 ПРИЛЁТ / ARRIVALS</h1>
+    <div class="clock" id="clock">00:00:00</div>
+  </header>
+
+  <main class="table-container">
+    <table>
       <thead>
         <tr>
           <th>Время</th>
           <th>Рейс</th>
+          <th style="text-align: center;">Авиакомпания</th>
           <th>Откуда</th>
-          <th>Авиакомпания</th>
-          <th>Зона выдачи багажа</th>
+          <th>Зона выдачи</th>
           <th>Статус</th>
         </tr>
       </thead>
-      <tbody id="flights-list"></tbody>
+      <tbody id="flightsTableBody">
+        <!-- Автоматически заполняется функцией renderBoard('arrival') -->
+      </tbody>
     </table>
-  </div>
+  </main>
 
-  <!-- Бегущая информационная строка -->
+  <!-- БЕГУЩАЯ СТРОКА -->
   <div class="ticker-wrap">
     <div class="ticker-title">ИНФОРМАЦИЯ</div>
-    <div class="ticker-content" id="ticker-text">Загрузка...</div>
+    <div class="ticker-track">
+      <div class="ticker-content" id="tickerText">
+        Уважаемые встречающие! Ожидайте прибытия рейсов в зале прилёта.
+      </div>
+    </div>
   </div>
 
   <script src="store.js"></script>
   <script>
-    startClock('clock');
-
-    function updateTicker() {
-      document.getElementById('ticker-text').textContent = getTickerText();
-    }
-
-    function renderArrivals() {
-      const tbody = document.getElementById('flights-list');
-      tbody.innerHTML = '';
-      const arrivals = getFlights().filter(f => f.type === 'arrival');
-
-      arrivals.forEach(f => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${f.time}</td>
-          <td><strong>${f.flight}</strong></td>
-          <td>${f.city}</td>
-          <td>
-            <div class="airline-cell">
-              ${getAirlineBadge(f.airline)}
-              <span>${f.airline}</span>
-            </div>
-          </td>
-          <td>${f.gate}</td>
-          <td class="${f.statusClass}">${f.status}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    renderArrivals();
-    updateTicker();
-
-    // Запуск автоматического движка смены статусов
-    runStatusEngine(renderArrivals);
-
-    // Реакция на изменения
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'fids_flights_data') renderArrivals();
-      if (e.key === 'fids_ticker_text') updateTicker();
-    });
+    renderBoard('arrival');
   </script>
 </body>
 </html>

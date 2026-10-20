@@ -2,19 +2,30 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Система FIDS Аэропорта</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Подсистема «Табло аэропорта»</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body style="display: flex; align-items: center; justify-content: center; min-height: 90vh;">
-  <div style="text-align: center; background: #1a1a1a; padding: 40px; border-radius: 8px; border: 1px solid #333; max-width: 600px;">
-    <h1 style="color: #ffcc00; margin-bottom: 10px;">ПОДСИСТЕМА «ТАБЛО АЭРОПОРТА»</h1>
-    <p style="color: #888; margin-bottom: 30px;">Программный комплекс отображения информации о рейсах</p>
-    
-    <div style="display: flex; flex-direction: column; gap: 15px;">
-      <a href="departures.html" target="_blank" class="btn btn-primary" style="text-decoration: none;">📺 Открыть экран «ВЫЛЕТ» (Монитор 1)</a>
-      <a href="arrivals.html" target="_blank" class="btn btn-primary" style="text-decoration: none;">📺 Открыть экран «ПРИЛЕТ» (Монитор 2)</a>
-      <a href="admin.html" target="_blank" class="btn btn-secondary" style="text-decoration: none;">🛠 Рабочее место диспетчера (АРМ)</a>
+<body>
+
+  <div class="menu-wrapper">
+    <div class="menu-card">
+      <h1>Подсистема «Табло аэропорта»</h1>
+      <p>Программный комплекс отображения информации о рейсах (FIDS)</p>
+
+      <div class="menu-links">
+        <a href="departures.html" class="menu-btn" target="_blank">
+          <span>📺</span> Открыть экран «ВЫЛЕТ» (Монитор 1)
+        </a>
+        <a href="arrivals.html" class="menu-btn" target="_blank">
+          <span>📺</span> Открыть экран «ПРИЛЁТ» (Монитор 2)
+        </a>
+        <a href="admin.html" class="menu-btn admin-btn" target="_blank">
+          <span>🛠️</span> Рабочее место диспетчера (АРМ)
+        </a>
+      </div>
     </div>
   </div>
+
 </body>
 </html>
